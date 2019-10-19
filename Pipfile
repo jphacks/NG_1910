@@ -12,6 +12,7 @@ line-bot-sdk = "*"
 flask-sqlalchemy = "*"
 flask-login = "*"
 sqlalchemy = "*"
+pymysql = "*"
 
 [requires]
 python_version = "3.7"
