@@ -55,6 +55,7 @@ def handle_message(event):
 
     e_type = event.type
     user_id = event.source.user_id
+    app.logger.debug('e_type:', e_type, event)
 
     if e_type == 'follow':
         # TODO: user create
@@ -132,8 +133,8 @@ def handle_message(event):
     #     raise(e)
 
 
-@app.route("/<user_id>/<tag>")
-def log(user_id, tag):
+@app.route("/<user_id>/<contents>")
+def log(user_id, contents):
     me = get_user(user_id)
     if me is None:
         abort(404)
@@ -141,11 +142,20 @@ def log(user_id, tag):
     now = datetime.now()
     log = Log(**dict(
         user_id=user_id,
-        tag=tag
+        contents=contents
     ))
     db.session.add(log)
     db.session.commit()
 
+    user_id = "Ud8f78f7c6a6377ca00790e0a10197e06"
+    try:
+        line_bot_api.push_message(
+            'user_id',
+            TextSendMessage(text=f'user_id: {user_id}\ncontents: {contents}')
+        )
+    except LineBotApiError as e:
+        app.logger.debug(str(e))
+        # error handle
     return
 
 
@@ -169,11 +179,7 @@ def index(user_id):
     return render_template('index.html', logs=logs)
 
 
-# try:
-#     line_bot_api.push_message('<to>', TextSendMessage(text='Hello World!'))
-# except LineBotApiError as e:
-#     print(str(e))
-#     # error handle
+
 
 if __name__ == "__main__":
     app.run()
