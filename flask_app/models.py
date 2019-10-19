@@ -8,8 +8,8 @@ class User(db.Model):
     __tablename__ = 'users'
 
     user_id = db.Column(db.String(50), index=True, primary_key=True)
-    user_name = db.Column(db.String(50))
-    profile_image_url = db.Column(db.String(200))
+    # user_name = db.Column(db.String(50))
+    # profile_image_url = db.Column(db.String(200))
 
     logs = db.relationship("Log", order_by="Log.created_at.desc()",
                            primaryjoin="User.user_id == Log.user_id", uselist=True, backref=backref("user", lazy="joined"), lazy="joined")
@@ -34,8 +34,8 @@ class User(db.Model):
         db.DateTime, default=datetime.now, onupdate=datetime.now)
 
     def __repr__(self):
-        return 'User(id={0}, user_id={1})'.format(
-            self.id, self.user_id
+        return 'User(user_id={0})'.format(
+            self.user_id
         )
 
 

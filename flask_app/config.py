@@ -28,7 +28,7 @@ class DevelopmentConfig:
         # Set up Cloud SQL Proxy (cloud.google.com/sql/docs/mysql/sql-proxy)
         # so that your application can use 127.0.0.1:3306 to connect to your
         # Cloud SQL instance
-        host = '127.0.0.1:13306'
+        host = '127.0.0.1'
         SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://{}:{}@{}/{}?charset=utf8'.format(
             db_user, db_password, host, db_name)
 

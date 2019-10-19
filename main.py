@@ -24,8 +24,8 @@ line_bot_api = LineBotApi(os.environ['ACCESS_TOKEN'])
 handler = WebhookHandler(os.environ['CHANNEL_SECRET'])
 
 
-def get_user(user_id):
-    me = db.session.query(User).filter_by(user_id=user_id).one_or_none()
+def get_me(id):
+    me = db.session.query(User).filter_by(user_id=id).one_or_none()
 
     return me
 
@@ -58,12 +58,16 @@ def handle_message(event):
     send_to = None
     user_id = None
     group_id = None
+    room_id = None
     if event.source.type == 'user':
         user_id = event.source.user_id
         send_to = user_id
-    else:
+    elif event.source.type == 'group':
         group_id = event.source.group_id
         send_to = group_id
+    elif event.source.type == 'room':
+        room_id = event.source.room_id
+        send_to = room_id
 
     app.logger.debug('e_type:', e_type, event)
 
@@ -75,6 +79,8 @@ def handle_message(event):
         app.logger.debug('e_type: unfollow', user_id)
     elif e_type == 'join':
         # TODO: group create
+        text = f'{Config.HOME_URL}/{send_to}'
+        push_message = TextSendMessage(text=text)
         app.logger.debug('e_type: join', group_id)
     elif e_type == 'leave':
         # TODO: group delete
@@ -109,28 +115,18 @@ def handle_message(event):
                 push_message,
             )
 
-    if (event.type != "message" or event.message.type != "text"):
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(
-                text="{}さん！\nそのメッセージは選択できないよ".format(profile.display_name))
-        )
-        return 0
-
-    profile = line_bot_api.get_profile(user_id)
-    user_name = profile.display_name  # -> 表示名
+    # profile = line_bot_api.get_profile(user_id)
+    # user_name = profile.display_name  # -> 表示名
     # user_id = profile.user_id #-> ユーザーID
-    profile_image_url = profile.picture_url  # -> 画像のURL
-    status_message = profile.status_message  # -> ステータスメッセージ
+    # profile_image_url = profile.picture_url  # -> 画像のURL
+    # status_message = profile.status_message  # -> ステータスメッセージ
 
-    me = get_user(user_id)
+    me = get_me(send_to)
 
     if me is None:
         # userが存在しないので、登録
         user = User(**dict(
-            user_id=user_id,
-            user_name=user_name,
-            profile_image_url=profile_image_url
+            user_id=send_to
         ))
         db.session.add(user)
         db.session.commit()
@@ -143,39 +139,39 @@ def handle_message(event):
     #         [TextSendMessage(text = "ごめんね{}さん\n「{}」のQRコード作成に失敗したよ".format(profile.display_name, message_text)), ImageSendMessage(original_content_url=fault_img, preview_image_url=fault_img)],
     #     )
     #     raise(e)
+    return 'OK'
 
 
-@app.route("/<user_id>/<contents>")
-def log(user_id, contents):
-    me = get_user(user_id)
+@app.route("/<id>/<contents>")
+def log(id, contents):
+    me = get_me(id)
     if me is None:
         abort(404)
 
     now = datetime.now()
     log = Log(**dict(
-        user_id=user_id,
+        user_id=id,
         contents=contents
     ))
     db.session.add(log)
     db.session.commit()
 
-    user_id = "Ud8f78f7c6a6377ca00790e0a10197e06"
     try:
-        test = f'user_id: {user_id}\ncontents: {contents}'
+        test = f'user_id: {id}\ncontents: {contents}'
         app.logger.debug('ok', test)
         line_bot_api.push_message(
-            'user_id',
+            id,
             TextSendMessage(text=test)
         )
     except LineBotApiError as e:
         app.logger.debug(str(e))
         # error handle
-    return
+    return 'OK'
 
 
 # @app.route("/<user_id>/reset")
 # def reset(user_id):
-#     me = get_user(user_id)
+#     me = get_me(user_id)
 #     if me is None:
 #         abort(404)
 
@@ -184,7 +180,7 @@ def log(user_id, contents):
 #         test = f'page: user_page, : {user_id}'
 #         app.logger.debug('ok', test)
 #         line_bot_api.push_message(
-#             'user_id',
+#             user_id,
 #             TextSendMessage(text=test)
 #         )
 #     except LineBotApiError as e:
@@ -193,24 +189,23 @@ def log(user_id, contents):
 #     return
 
 
-@app.route("/<user_id>")
-def user_page(user_id):
-    me = get_user(user_id)
+@app.route("/<id>")
+def user_page(id):
+    me = get_me(id)
     if me is None:
         abort(404)
 
-    user_id = "Ud8f78f7c6a6377ca00790e0a10197e06"
     try:
-        test = f'page: user_page, : {user_id}'
+        test = f'page: user_page, : {id}'
         app.logger.debug('ok', test)
         line_bot_api.push_message(
-            'user_id',
+            id,
             TextSendMessage(text=test)
         )
     except LineBotApiError as e:
         app.logger.debug(str(e))
         # error handle
-    return
+    return 'OK'
 
 
 if __name__ == "__main__":
