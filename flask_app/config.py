@@ -7,6 +7,7 @@ class DevelopmentConfig:
     DEBUG = True
     JSON_AS_ASCII = False
     SECRET_KEY = os.getenv('SECRET_KEY', 'lxqhpojp9usaxlksax89')
+    HOME_URL = os.getenv('HOME_URL', '')
 
     db_user = os.getenv('CLOUD_SQL_USERNAME', 'root')
     db_password = os.getenv('CLOUD_SQL_PASSWORD', '')
@@ -19,7 +20,7 @@ class DevelopmentConfig:
     # set to `standard`
     if os.getenv('GAE_ENV') == 'standard':
         # If deployed, use the local socket interface for accessing Cloud SQL
-        unix_socket = '/cloudsql/{}'.format(db_connection_name)
+        unix_socket = f'/cloudsql/{db_connection_name}'
         SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://{}:{}@/{}?unix_socket={}'.format(
             db_user, db_password, db_name, unix_socket)
     else:
@@ -27,7 +28,7 @@ class DevelopmentConfig:
         # Set up Cloud SQL Proxy (cloud.google.com/sql/docs/mysql/sql-proxy)
         # so that your application can use 127.0.0.1:3306 to connect to your
         # Cloud SQL instance
-        host = '127.0.0.1'
+        host = '127.0.0.1:13306'
         SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://{}:{}@{}/{}?charset=utf8'.format(
             db_user, db_password, host, db_name)
 
@@ -37,5 +38,6 @@ class DevelopmentConfig:
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_size': 3,
     }
+
 
 Config = DevelopmentConfig

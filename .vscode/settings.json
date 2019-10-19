@@ -1,0 +1,11 @@
+{
+  // "python.pythonPath": "/Users/tkrk/.local/share/virtualenvs/magne-mgscgjbQ/bin/python",
+  "python.linting.pylintEnabled": false,
+  "python.linting.flake8Enabled": true,
+  "python.formatting.provider": "autopep8",
+  "python.linting.enabled": true,
+  "python.linting.lintOnSave": true,
+  "editor.formatOnSave": true,
+  "python.linting.flake8Args": ["--ignore=W293, W504, E501"],
+  "python.formatting.autopep8Args": ["--aggressive"]
+}

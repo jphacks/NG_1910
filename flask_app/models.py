@@ -1,17 +1,9 @@
 from datetime import datetime
-from flask_login import UserMixin
-# from werkzeug.security import generate_password_hash, check_password_hash
-import logging
 from sqlalchemy import and_
 from sqlalchemy.orm import load_only, backref
-try:
-    from __init__ import db
-except:
-    from . import db
+from flask_app import db
 
-
-class User(db.Model, UserMixin):
-
+class User(db.Model):
     __tablename__ = 'users'
 
     user_id = db.Column(db.String(50), index=True, primary_key=True)
@@ -19,7 +11,7 @@ class User(db.Model, UserMixin):
     profile_image_url = db.Column(db.String(100))
 
     logs = db.relationship("Log", order_by="Log.created_at.desc()",
-                            primaryjoin="User.user_id == Log.user_id", uselist=True, backref=backref("user", lazy="joined"), lazy="joined")
+						primaryjoin="User.user_id == Log.user_id", uselist=True, backref=backref("user", lazy="joined"), lazy="joined")
     # password_hash = db.Column(db.String(20), nullable=True)
     # description = db.Column(db.String(200), nullable=True)
     # profile_image_url = db.Column(db.String(200), nullable=True)
@@ -45,7 +37,7 @@ class User(db.Model, UserMixin):
         )
 
 
-class Log(db.Model, UserMixin):
+class Log(db.Model):
 
     __tablename__ = 'logs'
 

@@ -7,17 +7,18 @@ from datetime import datetime, timedelta
 
 
 try:
-    from __init__ import app, db
+    from flask_app import app, db
+    from flask_app.models import *
+    from flask_app.config import Config
 except:
-    from . import app, db
+    from flask_app import app, db
+    from flask_app.models import *
+    from flask_app.config import Config
 from flask import Flask, abort, render_template, request
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError, LineBotApiError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
-try:
-    from models import *
-except:
-    from .models import *
+
 
 line_bot_api = LineBotApi(os.environ['ACCESS_TOKEN'])
 handler = WebhookHandler(os.environ['CHANNEL_SECRET'])
@@ -54,7 +55,16 @@ def callback():
 def handle_message(event):
 
     e_type = event.type
-    user_id = event.source.user_id
+    send_to = None
+    user_id = None
+    group_id = None
+    if event.source.type == 'user':
+        user_id = event.source.user_id
+        send_to = user_id
+    else:
+        group_id = event.source.group_id
+        send_to = group_id
+
     app.logger.debug('e_type:', e_type, event)
 
     if e_type == 'follow':
@@ -65,11 +75,9 @@ def handle_message(event):
         app.logger.debug('e_type: unfollow', user_id)
     elif e_type == 'join':
         # TODO: group create
-        group_id = event.source.group_id
         app.logger.debug('e_type: join', group_id)
     elif e_type == 'leave':
         # TODO: group delete
-        group_id = event.source.group_id
         app.logger.debug('e_type: leave', group_id)
     elif e_type == "message":
         m_type = event.message.type
@@ -77,7 +85,11 @@ def handle_message(event):
 
         if m_type == "text":
             message_text = event.message.text
-            push_message = TextSendMessage(text=message_text)
+            if message_text == 'URL':
+                text = f'{Config.HOME_URL}/{send_to}'
+                push_message = TextSendMessage(text=text)
+            else:
+                push_message = TextSendMessage(text=message_text)
         elif m_type == 'image':
             pass
             # ImageSendMessage
