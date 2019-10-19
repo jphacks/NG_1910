@@ -1,27 +1,20 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from flask import Flask, request, abort, render_template
-from linebot import (
-    LineBotApi, WebhookHandler
-)
-from linebot.exceptions import (
-    InvalidSignatureError,
-    LineBotApiError
-)
-from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage,
-)
-from datetime import datetime, timedelta
-import os
 import csv
-from __init__ import app, db
-from models import *
+import os
+from datetime import datetime, timedelta
+
+# from config import Config
+from . import app, db
+from flask import Flask, abort, render_template, request
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError, LineBotApiError
+from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from .models import *
 
 line_bot_api = LineBotApi(os.environ['ACCESS_TOKEN'])
 handler = WebhookHandler(os.environ['CHANNEL_SECRET'])
-
-app = Flask(__name__)
 
 
 def get_user(user_id):

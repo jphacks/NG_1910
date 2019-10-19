@@ -4,7 +4,7 @@ from flask_login import UserMixin
 import logging
 from sqlalchemy import and_
 from sqlalchemy.orm import load_only, backref
-from __init__ import db
+from . import db
 
 
 class User(db.Model, UserMixin):
