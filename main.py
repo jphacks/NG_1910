@@ -108,7 +108,6 @@ def handle_message(event):
                 event.reply_token,
                 push_message,
             )
-    return
 
     if (event.type != "message" or event.message.type != "text"):
         line_bot_api.reply_message(
@@ -117,9 +116,6 @@ def handle_message(event):
                 text="{}さん！\nそのメッセージは選択できないよ".format(profile.display_name))
         )
         return 0
-
-    message_text = event.message.text
-    print(message_text)
 
     profile = line_bot_api.get_profile(user_id)
     user_name = profile.display_name  # -> 表示名
@@ -136,6 +132,10 @@ def handle_message(event):
             user_name=user_name,
             profile_image_url=profile_image_url
         ))
+        db.session.add(user)
+        db.session.commit()
+
+        app.logger.debug('created!!!!!')
 
     # except Exception as e:
     #     line_bot_api.reply_message(
