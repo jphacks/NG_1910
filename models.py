@@ -4,7 +4,7 @@ from flask_login import UserMixin
 import logging
 from sqlalchemy import and_
 from sqlalchemy.orm import load_only, backref
-from . import db
+from __init__ import db
 
 
 class User(db.Model, UserMixin):
@@ -46,7 +46,8 @@ class Log(db.Model, UserMixin):
     id = db.Column(
         db.Integer,
         primary_key=True)
-    user_id = db.Column(db.String(50))
+    user_id = db.Column(db.String(50), db.ForeignKey(
+        'users.user_id', onupdate="CASCADE", ondelete="CASCADE"))
     tag = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, default=datetime.now)
 
