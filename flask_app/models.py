@@ -3,15 +3,16 @@ from sqlalchemy import and_
 from sqlalchemy.orm import load_only, backref
 from flask_app import db
 
+
 class User(db.Model):
     __tablename__ = 'users'
 
     user_id = db.Column(db.String(50), index=True, primary_key=True)
     user_name = db.Column(db.String(50))
-    profile_image_url = db.Column(db.String(100))
+    profile_image_url = db.Column(db.String(200))
 
     logs = db.relationship("Log", order_by="Log.created_at.desc()",
-						primaryjoin="User.user_id == Log.user_id", uselist=True, backref=backref("user", lazy="joined"), lazy="joined")
+                           primaryjoin="User.user_id == Log.user_id", uselist=True, backref=backref("user", lazy="joined"), lazy="joined")
     # password_hash = db.Column(db.String(20), nullable=True)
     # description = db.Column(db.String(200), nullable=True)
     # profile_image_url = db.Column(db.String(200), nullable=True)
@@ -26,7 +27,8 @@ class User(db.Model):
     # my_messages = db.relationship("Message", order_by="Message.created_at.desc()",
     #                               primaryjoin="User.id == Message.user_id", uselist=True, backref=backref("user", lazy="select"), lazy="select")
     # messages = db.relationship("Message", order_by="Message.created_at.desc()",
-    #                            primaryjoin="User.id == Message.destination_id", uselist=True, backref=backref("destination", lazy="select"), lazy="select")
+    # primaryjoin="User.id == Message.destination_id", uselist=True,
+    # backref=backref("destination", lazy="select"), lazy="select")
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(
         db.DateTime, default=datetime.now, onupdate=datetime.now)
