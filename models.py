@@ -4,7 +4,10 @@ from flask_login import UserMixin
 import logging
 from sqlalchemy import and_
 from sqlalchemy.orm import load_only, backref
-from . import db
+try:
+    from __init__ import db
+except:
+    from . import db
 
 
 class User(db.Model, UserMixin):
