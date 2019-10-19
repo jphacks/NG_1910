@@ -12,6 +12,9 @@ class User(db.Model, UserMixin):
     __tablename__ = 'users'
 
     user_id = db.Column(db.String(50), index=True, primary_key=True)
+    user_name = db.Column(db.String(50))
+    profile_image_url = db.Column(db.String(100))
+
     logs = db.relationship("Log", order_by="Log.created_at.desc()",
                             primaryjoin="User.user_id == Log.user_id", uselist=True, backref=backref("user", lazy="joined"), lazy="joined")
     # password_hash = db.Column(db.String(20), nullable=True)
@@ -45,6 +48,7 @@ class Log(db.Model, UserMixin):
 
     id = db.Column(
         db.Integer,
+        autoincrement=True,
         primary_key=True)
     user_id = db.Column(db.String(50), db.ForeignKey(
         'users.user_id', onupdate="CASCADE", ondelete="CASCADE"))

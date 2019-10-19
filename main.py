@@ -23,6 +23,12 @@ handler = WebhookHandler(os.environ['CHANNEL_SECRET'])
 app = Flask(__name__)
 
 
+def get_user(user_id):
+    me = db.session.query(User).filter_by(user_id=user_id).one_or_none()
+
+    return me
+
+
 @app.route("/callback", methods=['POST'])
 def callback():
     # get X-Line-Signature header value
@@ -47,6 +53,50 @@ def callback():
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
 
+    e_type = event.type
+    user_id = event.source.user_id
+
+    if e_type == 'follow':
+        # TODO: user create
+        app.logger.debug('e_type: follow', user_id)
+    elif e_type == 'unfollow':
+        # TODO: user delete
+        app.logger.debug('e_type: unfollow', user_id)
+    elif e_type == 'join':
+        # TODO: group create
+        group_id = event.source.group_id
+        app.logger.debug('e_type: join', group_id)
+    elif e_type == 'leave':
+        # TODO: group delete
+        group_id = event.source.group_id
+        app.logger.debug('e_type: leave', group_id)
+    elif e_type == "message":
+        m_type = event.message.type
+        push_message = None
+
+        if m_type == "text":
+            message_text = event.message.text
+            push_message = TextSendMessage(text=message_text)
+        elif m_type == 'image':
+            pass
+            # ImageSendMessage
+        elif m_type == 'audio':
+            pass
+        elif m_type == 'location':
+            pass
+        elif m_type == 'sticker':
+            pass
+
+        if push_message is None:
+            app.logger.debug('m_type:', m_type, 'not text')
+        else:
+            app.logger.debug('m_type:', m_type, 'text ok')
+            line_bot_api.reply_message(
+                event.reply_token,
+                push_message,
+            )
+    return
+
     if (event.type != "message" or event.message.type != "text"):
         line_bot_api.reply_message(
             event.reply_token,
@@ -57,9 +107,9 @@ def handle_message(event):
     message_text = event.message.text
     print(message_text)
 
-    profile = line_bot_api.get_profile(event.source.user_id)
+    profile = line_bot_api.get_profile(user_id)
     user_name = profile.display_name #-> 表示名
-    user_id = profile.user_id #-> ユーザーID
+    # user_id = profile.user_id #-> ユーザーID
     profile_image_url = profile.picture_url #-> 画像のURL
     status_message = profile.status_message #-> ステータスメッセージ
 
@@ -67,66 +117,11 @@ def handle_message(event):
 
     if me is None:
         # userが存在しないので、登録
-
-
-    # try:
-    #     m = obj_pat.search(message_text)
-    #     if (url_pat.search(message_text)):
-    #         data = message_text
-    #         # line_bot_api.reply_message(
-    #         #     event.reply_token,
-    #         #     TextSendMessage(text="ありがとう{}さん！\n「{}」をQRコードにしてくるよ！\nちょっと待っててね！".format(profile.display_name, message_text)),
-    #         # )
-    #     elif (m):
-    #         # if (m[2] in OBJ_DICT.keys()):
-    #         if (m[2] in OBJ_LIST):
-    #             # message_text = OBJ_DICT[m[2]]
-    #             message_text = m[2]
-    #             data = "https://line.me/R/ti/p/%40199vfndp?_aqr-obj={}".format(message_text)
-    #             # line_bot_api.reply_message(
-    #             #     event.reply_token,
-    #             #     TextSendMessage(text="ありがとう{}さん！\n「{}」をQRコードにしてくるよ！\nちょっと待っててね！".format(profile.display_name, message_text)),
-    #             # )
-    #         else:
-    #             line_bot_api.reply_message(
-    #                 event.reply_token,
-    #                 TextSendMessage(text="{}さん！\nそのオブジェクトは存在しないよ！！\n下の「3DオブジェクトのQRを作る」からオブジェクトを選択してね！".format(profile.display_name))
-    #             )
-    #             return 0
-    #     else:
-    #         data = "https://line.me/R/ti/p/%40199vfndp?&_aqr-message={}".format(message_text)
-    #         # line_bot_api.reply_message(
-    #         #     event.reply_token,
-    #         #     TextSendMessage(text="ありがとう{}さん！\n「{}」をQRコードにしてくるよ！\nちょっと待っててね！".format(profile.display_name, message_text))
-    #         # )
-
-    #     colors = random.choice(color_patterns)
-    #     Q = qr.QRCode()
-    #     # Q = qr.QRCode(
-    #     #     version=10,
-    #     #     error_correction=qr.constants.ERROR_CORRECT_H,
-    #     #     box_size=3,
-    #     #     border=8
-    #     # )
-    #     Q.add_data(data)
-    #     Q.make()
-    #     qr_img = Q.make_image(fill_color=colors[0], back_color=colors[1])
-    #     output = io.BytesIO()
-    #     qr_img.save(output, format='png')
-    #     qr_img_bin = output.getvalue()
-    #     img_url = upload_s3(qr_img_bin)
-    #     print(img_url)
-    #     if not (".png" in img_url):
-    #         text = "ごめんね{}さん\n「{}」のQRコード作成に失敗したよ".format(profile.display_name, message_text)
-    #         img_url = fault_img
-    #     else:
-    #         text = "{}さん！\n「{}」のQRコードが作成できたよ！\n専用アプリで読み込んでみてね！".format(profile.display_name, message_text)
-
-    #     # print(text)
-    #     line_bot_api.reply_message(
-    #         event.reply_token,
-    #         [TextSendMessage(text=text), ImageSendMessage(original_content_url=img_url, preview_image_url=img_url)],
-    #     )
+        user = User(**dict(
+            user_id=user_id,
+            user_name=user_name,
+            profile_image_url=profile_image_url
+        ))
 
     # except Exception as e:
     #     line_bot_api.reply_message(
@@ -138,17 +133,19 @@ def handle_message(event):
 
 @app.route("/<user_id>/<tag>")
 def log(user_id, tag):
+    me = get_user(user_id)
+    if me is None:
+        abort(404)
+
     now = datetime.now()
-    log = []
+    log = Log(**dict(
+        user_id=user_id,
+        tag=tag
+    ))
+    db.session.add(log)
+    db.session.commit()
 
-    with open('./log.csv', 'a') as f:
-        now = datetime.now()
-        now_str = now.strftime('%Y-%m-%d %H:%M:%S')
-        log = [user_id, tag, now_str]
-        writer = csv.writer(f)
-        writer.writerow(log)
-
-    return render_template('log.html', log=log)
+    return
 
 
 @app.route("/<user_id>/reset")
