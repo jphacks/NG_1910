@@ -10,7 +10,7 @@ try:
     from flask_app import app, db
     from flask_app.models import *
     from flask_app.config import Config
-except:
+except BaseException:
     from flask_app import app, db
     from flask_app.models import *
     from flask_app.config import Config
@@ -173,26 +173,44 @@ def log(user_id, contents):
     return
 
 
-@app.route("/<user_id>/reset")
-def reset(user_id):
-    with open('./log.csv', 'w') as f:
-        writer = csv.writer(f)
-        writer.writerow([])
+# @app.route("/<user_id>/reset")
+# def reset(user_id):
+#     me = get_user(user_id)
+#     if me is None:
+#         abort(404)
 
-    return render_template('reset.html')
+#     user_id = "Ud8f78f7c6a6377ca00790e0a10197e06"
+#     try:
+#         test = f'page: user_page, : {user_id}'
+#         app.logger.debug('ok', test)
+#         line_bot_api.push_message(
+#             'user_id',
+#             TextSendMessage(text=test)
+#         )
+#     except LineBotApiError as e:
+#         app.logger.debug(str(e))
+#         # error handle
+#     return
 
 
 @app.route("/<user_id>")
-def index(user_id):
-    logs = []
-    with open('./log.csv') as f:
-        reader = csv.reader(f)
-        logs = [row for row in reader]
-        print(logs)
+def user_page(user_id):
+    me = get_user(user_id)
+    if me is None:
+        abort(404)
 
-    return render_template('index.html', logs=logs)
-
-
+    user_id = "Ud8f78f7c6a6377ca00790e0a10197e06"
+    try:
+        test = f'page: user_page, : {user_id}'
+        app.logger.debug('ok', test)
+        line_bot_api.push_message(
+            'user_id',
+            TextSendMessage(text=test)
+        )
+    except LineBotApiError as e:
+        app.logger.debug(str(e))
+        # error handle
+    return
 
 
 if __name__ == "__main__":
