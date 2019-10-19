@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 import os
 import csv
 from __init__ import app, db
+from models import *
 
 line_bot_api = LineBotApi(os.environ['ACCESS_TOKEN'])
 handler = WebhookHandler(os.environ['CHANNEL_SECRET'])
@@ -100,7 +101,8 @@ def handle_message(event):
     if (event.type != "message" or event.message.type != "text"):
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="{}さん！\nそのメッセージは選択できないよ".format(profile.display_name))
+            TextSendMessage(
+                text="{}さん！\nそのメッセージは選択できないよ".format(profile.display_name))
         )
         return 0
 
@@ -108,10 +110,10 @@ def handle_message(event):
     print(message_text)
 
     profile = line_bot_api.get_profile(user_id)
-    user_name = profile.display_name #-> 表示名
+    user_name = profile.display_name  # -> 表示名
     # user_id = profile.user_id #-> ユーザーID
-    profile_image_url = profile.picture_url #-> 画像のURL
-    status_message = profile.status_message #-> ステータスメッセージ
+    profile_image_url = profile.picture_url  # -> 画像のURL
+    status_message = profile.status_message  # -> ステータスメッセージ
 
     me = get_user(user_id)
 

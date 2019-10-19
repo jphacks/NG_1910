@@ -52,7 +52,7 @@ class Log(db.Model, UserMixin):
         primary_key=True)
     user_id = db.Column(db.String(50), db.ForeignKey(
         'users.user_id', onupdate="CASCADE", ondelete="CASCADE"))
-    tag = db.Column(db.String(50))
+    contents = db.Column(db.String(1000))
     created_at = db.Column(db.DateTime, default=datetime.now)
 
     def __repr__(self):
