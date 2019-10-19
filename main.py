@@ -149,9 +149,11 @@ def log(user_id, contents):
 
     user_id = "Ud8f78f7c6a6377ca00790e0a10197e06"
     try:
+        test = f'user_id: {user_id}\ncontents: {contents}'
+        app.logger.debug('ok', test)
         line_bot_api.push_message(
             'user_id',
-            TextSendMessage(text=f'user_id: {user_id}\ncontents: {contents}')
+            TextSendMessage(text=test)
         )
     except LineBotApiError as e:
         app.logger.debug(str(e))
