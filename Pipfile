@@ -8,6 +8,10 @@ verify_ssl = true
 [packages]
 flask = "*"
 gunicorn = "*"
+line-bot-sdk = "*"
+flask-sqlalchemy = "*"
+flask-login = "*"
+sqlalchemy = "*"
 
 [requires]
 python_version = "3.7"
