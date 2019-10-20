@@ -4,6 +4,8 @@
 import os
 import base64
 from datetime import datetime, timedelta
+from google.cloud import storage
+from functions import upload_s3
 
 try:
     from flask_app import app, db
@@ -34,8 +36,9 @@ def get_me(id):
 
 
 def upload_file(file_stream, filename, content_type):
+    bucket_name = os.environ['CLOUD_STORAGE_BUCKET']
     client = storage.Client()
-    bucket = storage_client.get_bucket(bucket_name)
+    bucket = client.get_bucket(bucket_name)
     blob = bucket.blob(filename)
 
     blob.upload_from_string(
@@ -47,7 +50,7 @@ def upload_file(file_stream, filename, content_type):
     return url
 
 
-def validate_json(json_date):
+def validate_json(json_data):
     return_json = {}
     for key, value in json_data.items():
         if key in ALLOW_PARAMS:
@@ -95,6 +98,7 @@ def handle_message(event):
         room_id = event.source.room_id
         send_to = room_id
 
+    me = get_me(send_to)
     app.logger.debug('e_type:', e_type, event)
 
     if e_type == 'follow':
@@ -124,6 +128,13 @@ def handle_message(event):
             if message_text == 'URL':
                 text = f'{Config.HOME_URL}/{send_to}/'
                 push_message = TextSendMessage(text=text)
+            elif message_text == '履歴':
+                # TODO
+                text = '履歴:\n'
+                for log in me.logs:
+                    time = created_at.strftime('%Y/%m/%d %H-%M-%S')
+                    text += f'{time}: {log.contents}\n'
+                push_message = TextSendMessage(text=text)
             else:
                 push_message = TextSendMessage(text=message_text)
         elif m_type == 'image':
@@ -151,8 +162,6 @@ def handle_message(event):
     # profile_image_url = profile.picture_url  # -> 画像のURL
     # status_message = profile.status_message  # -> ステータスメッセージ
 
-    me = get_me(send_to)
-
     if me is None:
         # userが存在しないので、登録
         user = User(**dict(
@@ -172,31 +181,31 @@ def handle_message(event):
     return 'OK'
 
 
-@app.route("/<id>/<contents>")
-def log(id, contents):
-    me = get_me(id)
-    if me is None:
-        abort(404)
+# @app.route("/<id>/<contents>")
+# def log(id, contents):
+#     me = get_me(id)
+#     if me is None:
+#         abort(404)
 
-    now = datetime.now()
-    log = Log(**dict(
-        user_id=id,
-        contents=contents
-    ))
-    db.session.add(log)
-    db.session.commit()
+#     now = datetime.now()
+#     log = Log(**dict(
+#         user_id=id,
+#         contents=contents
+#     ))
+#     db.session.add(log)
+#     db.session.commit()
 
-    try:
-        test = f'user_id: {id}\ncontents: {contents}'
-        app.logger.debug('ok', test)
-        line_bot_api.push_message(
-            id,
-            TextSendMessage(text=test)
-        )
-    except LineBotApiError as e:
-        app.logger.debug(str(e))
-        # error handle
-    return 'OK'
+#     try:
+#         test = f'user_id: {id}\ncontents: {contents}'
+#         app.logger.debug('ok', test)
+#         line_bot_api.push_message(
+#             id,
+#             TextSendMessage(text=test)
+#         )
+#     except LineBotApiError as e:
+#         app.logger.debug(str(e))
+#         # error handle
+#     return 'OK'
 
 
 # @app.route("/<user_id>/reset")
@@ -228,30 +237,57 @@ def user_page(id):
 
     # 存在してほしい値だけとる
     json_data = validate_json(json_data)
+    app.logger.debug(json_data)
+
     if len(json_data) == 0:
         app.logger.debug('not posted')
         return
 
     name = json_data.get('name')
     name = 'ゲスト' if name is None else name
-    lat = float(json_data.get('lat'))
-    lon = float(json_data.get('lon'))
+    lat = json_data.get('lat')
+    lat = float(os.environ['default_lat']) if lat is None else float(lat)
+    lon = json_data.get('lon')
+    lon = float(os.environ['default_lon']) if lon is None else float(lon)
     address = json_data.get('address')
     message = json_data.get('message')
     image_base64 = json_data.get('image')
-    audio_base64 = json_data.get('audio')
+    # audio_base64 = json_data.get('audio')
+    audio_base64 = 'test'
+
+    if message is not None:
+        log = Log(**dict(
+            user_id=send_to,
+            contents=message
+        ))
+    db.session.add(log)
+    db.session.commit()
+
+    # test
+    image_url = 'https://pbs.twimg.com/media/EHSzw-fVUAIx0F2?format=jpg'
+    audio_url = 'https://taira-komori.jpn.org/sound/daily01/knocking_an_iron_door1.mp3'
 
     try:
         if image_base64 is not None:
             destination_blob_name = now.strftime('%Y%m%d%H%M%S')
             content_type = 'png'
+
             file_blob = base64.b64decode(image_base64)
 
-            image_url = upload_file(
-                file_blob,
-                destination_blob_name,
-                content_type
-            )
+            # image_url = upload_file(
+            #     file_blob,
+            #     destination_blob_name,
+            #     content_type
+            # )
+
+            file_name = f'{destination_blob_name}.{content_type}'
+            image_url = upload_s3(file_blob, file_name)
+            # with open(f'/static/image/{file_name}', 'wb') as fp:
+            #     fp.write(file_blob)
+
+            # image_url = f'{Config.HOME_URL}/{file_name}'
+            app.logger.debug('image saved', image_url)
+
     except Exception as e:
         app.logger.warn(str(e))
 
@@ -267,7 +303,9 @@ def user_page(id):
             #     destination_blob_name,
             #     content_type
             # )
-            audio_url = 'sample.mp3'
+            # audio_url = 'sample.mp3'
+            pass
+
     except Exception as e:
         app.logger.warn(str(e))
 
@@ -278,12 +316,17 @@ def user_page(id):
         app.logger.warn('me is None')
 
     try:
-        test = f'{name}さんからメッセージが届きました'
+        test = f'{name}さんからメッセージが届きました\n'
+        message_list += [
+            TextSendMessage(
+                text=test
+            )
+        ]
         message_list = []
         if (lat is not None) and (lon is not None) and (address is not None):
             message_list += [
                 LocationSendMessage(
-                    title='{name}さんの現在地',
+                    title=f'{name}さんの現在地',
                     address=address,
                     latitude=lat,
                     longitude=lon
@@ -298,15 +341,15 @@ def user_page(id):
         if image_base64 is not None:
             message_list += [
                 ImageSendMessage(
-                    originalContentUrl=image_url,
-                    previewImageUrl=image_url
+                    original_content_url=image_url,
+                    preview_image_url=image_url
                 )
             ]
         if audio_base64 is not None:
             # message_list += [
             #     AudioSendMessage(
-            #         originalContentUrl=audio_url,
-            #         duration=audio_duration
+            #         original_content_url=audio_url,
+            #         duration=2000
             #     )
             # ]
             pass
@@ -323,6 +366,16 @@ def user_page(id):
         app.logger.warn(str(e))
 
     return 'OK'
+
+
+# @app.route('/image/<filename>')
+# def image(filename):
+#     with open(f'/static/image/{filename}', 'rb') as fp:
+#         image_bin = fp.read()
+#         return send_file(
+#             io.BytesIO(image_bin),
+#             mimetype='image/png'
+#         )
 
 
 if __name__ == "__main__":
