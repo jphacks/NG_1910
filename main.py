@@ -6,8 +6,6 @@ import dropbox
 import os
 import base64
 from datetime import datetime, timedelta
-# from google.cloud import storage
-# from functions import upload_s3
 
 try:
     from flask_app import app, db
@@ -33,23 +31,6 @@ def get_me(id):
     me = db.session.query(User).filter_by(user_id=id).one_or_none()
 
     return me
-
-# [START upload_file]
-
-
-# def upload_file(file_stream, filename, content_type):
-#     bucket_name = os.environ['CLOUD_STORAGE_BUCKET']
-#     client = storage.Client()
-#     bucket = client.get_bucket(bucket_name)
-#     blob = bucket.blob(filename)
-
-#     blob.upload_from_string(
-#         file_stream,
-#         content_type=content_type)
-
-#     url = blob.public_url
-
-#     return url
 
 
 def upload_image(img_binary, file_name):
@@ -156,7 +137,6 @@ def handle_message(event):
                 text = f'{Config.HOME_URL}/{send_to}/'
                 push_message = TextSendMessage(text=text)
             elif message_text == '履歴':
-                # TODO
                 if len(me.logs) == 0:
                     text = '履歴なし'
                 else:
@@ -169,14 +149,12 @@ def handle_message(event):
                 text = '本当に削除しますか？(yes/no)'
                 push_message = TextSendMessage(text=text)
             elif message_text == 'yes':
-                # TODO
                 me.logs = []
                 db.session.add(me)
                 db.session.commit()
 
                 push_message = TextSendMessage(text="削除完了")
             elif message_text == 'NFC':
-                # TODO
                 url = f'{Config.HOME_URL}/{send_to}/'
                 text = f'ショートカットへ以下のURLをトリガーに設定してください'
                 push_message = [
@@ -184,14 +162,12 @@ def handle_message(event):
                         text=text), TextSendMessage(
                         text=url)]
             elif message_text == '使い方':
-                # TODO
                 text = '使い方:\n工事中'
                 push_message = TextSendMessage(text=text)
             else:
                 push_message = TextSendMessage(text="無効なメッセージです")
         elif m_type == 'image':
             pass
-            # ImageSendMessage
         elif m_type == 'audio':
             pass
         elif m_type == 'location':
@@ -224,67 +200,12 @@ def handle_message(event):
 
         app.logger.debug('created!!!!!')
 
-    # except Exception as e:
-    #     line_bot_api.reply_message(
-    #         event.reply_token,
-    #         [TextSendMessage(text = "ごめんね{}さん\n「{}」のQRコード作成に失敗したよ".format(profile.display_name, message_text)), ImageSendMessage(original_content_url=fault_img, preview_image_url=fault_img)],
-    #     )
-    #     raise(e)
     return 'OK'
-
-
-# @app.route("/<id>/<contents>")
-# def log(id, contents):
-#     me = get_me(id)
-#     if me is None:
-#         abort(404)
-
-#     now = datetime.now()
-#     log = Log(**dict(
-#         user_id=id,
-#         contents=contents
-#     ))
-#     db.session.add(log)
-#     db.session.commit()
-
-#     try:
-#         test = f'user_id: {id}\ncontents: {contents}'
-#         app.logger.debug('ok', test)
-#         line_bot_api.push_message(
-#             id,
-#             TextSendMessage(text=test)
-#         )
-#     except LineBotApiError as e:
-#         app.logger.debug(str(e))
-#         # error handle
-#     return 'OK'
-
-
-# @app.route("/<user_id>/reset")
-# def reset(user_id):
-#     me = get_me(user_id)
-#     if me is None:
-#         abort(404)
-
-#     user_id = "Ud8f78f7c6a6377ca00790e0a10197e06"
-#     try:
-#         test = f'page: user_page, : {user_id}'
-#         app.logger.debug('ok', test)
-#         line_bot_api.push_message(
-#             user_id,
-#             TextSendMessage(text=test)
-#         )
-#     except LineBotApiError as e:
-#         app.logger.debug(str(e))
-#         # error handle
-#     return
 
 
 @app.route("/<id>", methods=['GET', 'POST'])
 def user_page(id):
     now = datetime.now()
-    # app.logger.debug(request.__dict__)
-    # app.logger.debug(request.get_json(force=True))
     json_data = request.get_json(force=True)
 
     # 存在してほしい値だけとる
@@ -298,14 +219,13 @@ def user_page(id):
     name = json_data.get('name')
     name = 'ゲスト' if name is None else name
     lat = json_data.get('lat')
-    lat = float(os.environ['default_lat']) if lat is None else float(lat)
+    lat = 0.0 if lat is None else float(lat)
     lon = json_data.get('lon')
-    lon = float(os.environ['default_lon']) if lon is None else float(lon)
+    lon = 0.0 if lon is None else float(lon)
     address = json_data.get('address')
     message = json_data.get('message')
     image_base64 = json_data.get('image')
-    # audio_base64 = json_data.get('audio')
-    audio_base64 = 'test'
+    audio_base64 = json_data.get('audio')
 
     if message is not None:
         log = Log(**dict(
@@ -315,9 +235,8 @@ def user_page(id):
     db.session.add(log)
     db.session.commit()
 
-    # test
-    image_url = 'https://pbs.twimg.com/media/EHSzw-fVUAIx0F2?format=jpg'
-    audio_url = 'https://taira-komori.jpn.org/sound/daily01/knocking_an_iron_door1.mp3'
+    image_url = ''
+    audio_url = ''
 
     try:
         if image_base64 is not None:
@@ -333,12 +252,7 @@ def user_page(id):
             # )
 
             file_name = f'{destination_blob_name}.{content_type}'
-            # image_url = upload_s3(file_blob, file_name)
             image_url = upload_image(file_blob, file_name)
-            # with open(f'/static/image/{file_name}', 'wb') as fp:
-            #     fp.write(file_blob)
-
-            # image_url = f'{Config.HOME_URL}/{file_name}'
             app.logger.debug('image saved', image_url)
 
     except Exception as e:
@@ -421,16 +335,6 @@ def user_page(id):
         app.logger.warn(str(e))
 
     return 'OK'
-
-
-# @app.route('/image/<filename>')
-# def image(filename):
-#     with open(f'/static/image/{filename}', 'rb') as fp:
-#         image_bin = fp.read()
-#         return send_file(
-#             io.BytesIO(image_bin),
-#             mimetype='image/png'
-#         )
 
 
 if __name__ == "__main__":
