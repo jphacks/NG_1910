@@ -257,7 +257,7 @@ def user_page(id):
 
     if message is not None:
         log = Log(**dict(
-            user_id=send_to,
+            user_id=id,
             contents=message
         ))
     db.session.add(log)
