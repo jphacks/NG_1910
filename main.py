@@ -19,6 +19,8 @@ from linebot.exceptions import InvalidSignatureError, LineBotApiError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage, AudioSendMessage, ImageSendMessage, LocationSendMessage
 
 
+ALLOW_PARAMS = ['name', 'message', 'lat', 'lon', 'address', 'image']
+
 line_bot_api = LineBotApi(os.environ['ACCESS_TOKEN'])
 handler = WebhookHandler(os.environ['CHANNEL_SECRET'])
 
@@ -43,6 +45,15 @@ def upload_file(file_stream, filename, content_type):
     url = blob.public_url
 
     return url
+
+
+def validate_json(json_date):
+    return_json = {}
+    for key, value in json_data.items():
+        if key in ALLOW_PARAMS:
+            return_json[key] = value
+
+    return return_json
 
 
 @app.route("/callback", methods=['POST'])
@@ -230,35 +241,41 @@ def user_page(id):
     image_base64 = json_data.get('image')
     audio_base64 = json_data.get('audio')
 
-    if image_base64 is not None:
-        destination_blob_name = now.strftime('%Y%m%d%H%M%S')
-        content_type = 'png'
-        file_blob = base64.b64decode(image_base64)
+    try:
+        if image_base64 is not None:
+            destination_blob_name = now.strftime('%Y%m%d%H%M%S')
+            content_type = 'png'
+            file_blob = base64.b64decode(image_base64)
 
-        image_url = upload_file(
-            file_blob,
-            destination_blob_name,
-            content_type
-        )
+            image_url = upload_file(
+                file_blob,
+                destination_blob_name,
+                content_type
+            )
+    except Exception as e:
+        app.logger.warn(str(e))
 
-    if audio_base64 is not None:
-        # TODO: ここでaudioのbase64 -> wav or mp3へ変換したい
-        # destination_blob_name = now.strftime('%Y%m%d%H%M%S')
-        # content_type = 'wav'
-        # file_blob = base64.b64decode(image_base64)
+    try:
+        if audio_base64 is not None:
+            # TODO: ここでaudioのbase64 -> wav or mp3へ変換したい
+            # destination_blob_name = now.strftime('%Y%m%d%H%M%S')
+            # content_type = 'wav'
+            # file_blob = base64.b64decode(image_base64)
 
-        # image_url = upload_file(
-        #     file_blob,
-        #     destination_blob_name,
-        #     content_type
-        # )
-        audio_url = 'sample.mp3'
+            # image_url = upload_file(
+            #     file_blob,
+            #     destination_blob_name,
+            #     content_type
+            # )
+            audio_url = 'sample.mp3'
+    except Exception as e:
+        app.logger.warn(str(e))
 
     app.logger.info(image_url)
 
     me = get_me(id)
     if me is None:
-        abort(404)
+        app.logger.warn('me is None')
 
     try:
         test = f'{name}さんからメッセージが届きました'
@@ -302,6 +319,9 @@ def user_page(id):
     except LineBotApiError as e:
         app.logger.debug(str(e))
         # error handle
+    except Exception as e:
+        app.logger.warn(str(e))
+
     return 'OK'
 
 
