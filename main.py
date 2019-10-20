@@ -73,7 +73,7 @@ def callback():
     signature = request.headers['X-Line-Signature']
     # print(request.data)
     # get request body as text
-    #body = request.get_data(as_text=True)
+    # body = request.get_data(as_text=True)
     body_data = request.get_data()
     charset = 'UTF-8'
     body = body_data.decode(charset, 'replace')
@@ -210,7 +210,7 @@ def user_page(id):
 
     # 存在してほしい値だけとる
     json_data = validate_json(json_data)
-    app.logger.debug(json_data)
+    app.logger.debug(str([str(f'{k},{v}') for k, v in json_data.items()]))
 
     if len(json_data) == 0:
         app.logger.debug('not posted')
@@ -218,10 +218,10 @@ def user_page(id):
 
     name = json_data.get('name')
     name = 'ゲスト' if name is None else name
-    lat = json_data.get('lat')
-    lat = 0.0 if lat is None else float(lat)
     lon = json_data.get('lon')
-    lon = 0.0 if lon is None else float(lon)
+    lon = 135.26172618 if lon is None else float(lon)
+    lat = json_data.get('lat')
+    lat = 36.27791617 if lat is None else float(lat)
     address = json_data.get('address')
     message = json_data.get('message')
     image_base64 = json_data.get('image')
