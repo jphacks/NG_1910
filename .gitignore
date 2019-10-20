@@ -2,3 +2,4 @@
 .gcloudignore
 secret.yaml
 key.json
+key*.json

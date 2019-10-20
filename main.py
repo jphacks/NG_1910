@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import csv
 import os
+import base64
 from datetime import datetime, timedelta
-
 
 try:
     from flask_app import app, db
@@ -17,7 +16,7 @@ except BaseException:
 from flask import Flask, abort, render_template, request
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError, LineBotApiError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
+from linebot.models import MessageEvent, TextMessage, TextSendMessage, AudioSendMessage, ImageSendMessage, LocationSendMessage
 
 
 line_bot_api = LineBotApi(os.environ['ACCESS_TOKEN'])
@@ -28,6 +27,22 @@ def get_me(id):
     me = db.session.query(User).filter_by(user_id=id).one_or_none()
 
     return me
+
+# [START upload_file]
+
+
+def upload_file(file_stream, filename, content_type):
+    client = storage.Client()
+    bucket = storage_client.get_bucket(bucket_name)
+    blob = bucket.blob(filename)
+
+    blob.upload_from_string(
+        file_stream,
+        content_type=content_type)
+
+    url = blob.public_url
+
+    return url
 
 
 @app.route("/callback", methods=['POST'])
@@ -79,8 +94,12 @@ def handle_message(event):
         app.logger.debug('e_type: unfollow', user_id)
     elif e_type == 'join':
         # TODO: group create
-        text = f'{Config.HOME_URL}/{send_to}'
+        text = f'{Config.HOME_URL}/{send_to}/'
         push_message = TextSendMessage(text=text)
+        line_bot_api.reply_message(
+            event.reply_token,
+            push_message,
+        )
         app.logger.debug('e_type: join', group_id)
     elif e_type == 'leave':
         # TODO: group delete
@@ -92,7 +111,7 @@ def handle_message(event):
         if m_type == "text":
             message_text = event.message.text
             if message_text == 'URL':
-                text = f'{Config.HOME_URL}/{send_to}'
+                text = f'{Config.HOME_URL}/{send_to}/'
                 push_message = TextSendMessage(text=text)
             else:
                 push_message = TextSendMessage(text=message_text)
@@ -189,18 +208,96 @@ def log(id, contents):
 #     return
 
 
-@app.route("/<id>")
+@app.route("/<id>", methods=['GET', 'POST'])
 def user_page(id):
+    now = datetime.now()
+    # app.logger.debug(request.__dict__)
+    # app.logger.debug(request.get_json(force=True))
+    json_data = request.get_json(force=True)
+
+    # 存在してほしい値だけとる
+    json_data = validate_json(json_data)
+    if len(json_data) == 0:
+        app.logger.debug('not posted')
+        return
+
+    name = json_data.get('name')
+    name = 'ゲスト' if name is None else name
+    lat = float(json_data.get('lat'))
+    lon = float(json_data.get('lon'))
+    address = json_data.get('address')
+    message = json_data.get('message')
+    image_base64 = json_data.get('image')
+    audio_base64 = json_data.get('audio')
+
+    if image_base64 is not None:
+        destination_blob_name = now.strftime('%Y%m%d%H%M%S')
+        content_type = 'png'
+        file_blob = base64.b64decode(image_base64)
+
+        image_url = upload_file(
+            file_blob,
+            destination_blob_name,
+            content_type
+        )
+
+    if audio_base64 is not None:
+        # TODO: ここでaudioのbase64 -> wav or mp3へ変換したい
+        # destination_blob_name = now.strftime('%Y%m%d%H%M%S')
+        # content_type = 'wav'
+        # file_blob = base64.b64decode(image_base64)
+
+        # image_url = upload_file(
+        #     file_blob,
+        #     destination_blob_name,
+        #     content_type
+        # )
+        audio_url = 'sample.mp3'
+
+    app.logger.info(image_url)
+
     me = get_me(id)
     if me is None:
         abort(404)
 
     try:
-        test = f'page: user_page, : {id}'
+        test = f'{name}さんからメッセージが届きました'
+        message_list = []
+        if (lat is not None) and (lon is not None) and (address is not None):
+            message_list += [
+                LocationSendMessage(
+                    title='{name}さんの現在地',
+                    address=address,
+                    latitude=lat,
+                    longitude=lon
+                )
+            ]
+        if message is not None:
+            message_list += [
+                TextSendMessage(
+                    text=message
+                )
+            ]
+        if image_base64 is not None:
+            message_list += [
+                ImageSendMessage(
+                    originalContentUrl=image_url,
+                    previewImageUrl=image_url
+                )
+            ]
+        if audio_base64 is not None:
+            # message_list += [
+            #     AudioSendMessage(
+            #         originalContentUrl=audio_url,
+            #         duration=audio_duration
+            #     )
+            # ]
+            pass
+
         app.logger.debug('ok', test)
         line_bot_api.push_message(
             id,
-            TextSendMessage(text=test)
+            message_list
         )
     except LineBotApiError as e:
         app.logger.debug(str(e))

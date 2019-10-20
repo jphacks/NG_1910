@@ -27,6 +27,7 @@ Werkzeug = "==0.15.4"
 WTForms = "==2.2.1"
 PyMySQL = "==0.9.3"
 flake8 = "*"
+google-cloud-storage = "*"
 
 [requires]
 python_version = "3.7"
