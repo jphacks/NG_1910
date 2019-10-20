@@ -1,6 +1,6 @@
 # IN TOUCH ~ Smarter communication ~
 
-[![Product Name](image.png)](https://www.youtube.com/watch?v=G5rULR53uMk)
+[![Product Name](image.png)](https://youtu.be/0nLWxXFL8SE)
 
 ## 製品概要
 ### Communication Tech 
@@ -34,7 +34,7 @@ LINE Botを動作させるサーバはデータベースと連動しているた
 * LineMessagingAPI
 * GoogleCloudSQL
 * GoogleAppEngine
-＊ GoogleCloudStrage
+* GoogleCloudStrage
 
 #### フレームワーク・ライブラリ・モジュール
 * Flask
