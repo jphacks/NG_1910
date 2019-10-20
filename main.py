@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import io
+import dropbox
 import os
 import base64
 from datetime import datetime, timedelta
-from google.cloud import storage
-from functions import upload_s3
+# from google.cloud import storage
+# from functions import upload_s3
 
 try:
     from flask_app import app, db
@@ -35,19 +37,44 @@ def get_me(id):
 # [START upload_file]
 
 
-def upload_file(file_stream, filename, content_type):
-    bucket_name = os.environ['CLOUD_STORAGE_BUCKET']
-    client = storage.Client()
-    bucket = client.get_bucket(bucket_name)
-    blob = bucket.blob(filename)
+# def upload_file(file_stream, filename, content_type):
+#     bucket_name = os.environ['CLOUD_STORAGE_BUCKET']
+#     client = storage.Client()
+#     bucket = client.get_bucket(bucket_name)
+#     blob = bucket.blob(filename)
 
-    blob.upload_from_string(
-        file_stream,
-        content_type=content_type)
+#     blob.upload_from_string(
+#         file_stream,
+#         content_type=content_type)
 
-    url = blob.public_url
+#     url = blob.public_url
 
-    return url
+#     return url
+
+
+def upload_image(img_binary, file_name):
+
+    ACCESS_TOKEN = os.environ["D_ACCESS_TOKEN"]
+    dbx = dropbox.Dropbox(ACCESS_TOKEN)
+    path = '/static/image/' + file_name
+
+    dbx.files_upload(img_binary, path)
+
+    setting = dropbox.sharing.SharedLinkSettings(
+        requested_visibility=dropbox.sharing.RequestedVisibility.public)
+    link = dbx.sharing_create_shared_link_with_settings(
+        path=path, settings=setting)
+
+    links = dbx.sharing_list_shared_links(path=path, direct_only=True).links
+    if links is not None:
+        for link in links:
+            url = link.url
+            url = url.replace(
+                'www.dropbox',
+                'dl.dropboxusercontent').replace(
+                '?dl=0',
+                '')
+            return url
 
 
 def validate_json(json_data):
@@ -130,13 +157,38 @@ def handle_message(event):
                 push_message = TextSendMessage(text=text)
             elif message_text == '履歴':
                 # TODO
-                text = '履歴:\n'
-                for log in me.logs:
-                    time = created_at.strftime('%Y/%m/%d %H-%M-%S')
-                    text += f'{time}: {log.contents}\n'
+                if len(me.logs) == 0:
+                    text = '履歴なし'
+                else:
+                    text = '[履歴]\n'
+                    for log in me.logs:
+                        time = log.created_at.strftime('%Y/%m/%d %H-%M-%S')
+                        text += f'\n{time}:\n{log.contents}\n'
+                push_message = TextSendMessage(text=text)
+            elif message_text == '履歴削除':
+                text = '本当に削除しますか？(yes/no)'
+                push_message = TextSendMessage(text=text)
+            elif message_text == 'yes':
+                # TODO
+                me.logs = []
+                db.session.add(me)
+                db.session.commit()
+
+                push_message = TextSendMessage(text="削除完了")
+            elif message_text == 'NFC':
+                # TODO
+                url = f'{Config.HOME_URL}/{send_to}/'
+                text = f'ショートカットへ以下のURLをトリガーに設定してください'
+                push_message = [
+                    TextSendMessage(
+                        text=text), TextSendMessage(
+                        text=url)]
+            elif message_text == '使い方':
+                # TODO
+                text = '使い方:\n工事中'
                 push_message = TextSendMessage(text=text)
             else:
-                push_message = TextSendMessage(text=message_text)
+                push_message = TextSendMessage(text="無効なメッセージです")
         elif m_type == 'image':
             pass
             # ImageSendMessage
@@ -281,7 +333,8 @@ def user_page(id):
             # )
 
             file_name = f'{destination_blob_name}.{content_type}'
-            image_url = upload_s3(file_blob, file_name)
+            # image_url = upload_s3(file_blob, file_name)
+            image_url = upload_image(file_blob, file_name)
             # with open(f'/static/image/{file_name}', 'wb') as fp:
             #     fp.write(file_blob)
 
@@ -316,13 +369,14 @@ def user_page(id):
         app.logger.warn('me is None')
 
     try:
-        test = f'{name}さんからメッセージが届きました\n'
-        message_list += [
-            TextSendMessage(
-                text=test
-            )
-        ]
+
         message_list = []
+        # test = f'{name}さんからメッセージが届きました'
+        # message_list += [
+        #     TextSendMessage(
+        #         text=test
+        #     )
+        # ]
         if (lat is not None) and (lon is not None) and (address is not None):
             message_list += [
                 LocationSendMessage(
@@ -333,6 +387,7 @@ def user_page(id):
                 )
             ]
         if message is not None:
+            message = f'メッセージ:\n{message}'
             message_list += [
                 TextSendMessage(
                     text=message
@@ -354,7 +409,7 @@ def user_page(id):
             # ]
             pass
 
-        app.logger.debug('ok', test)
+        app.logger.debug('ok')
         line_bot_api.push_message(
             id,
             message_list
