@@ -219,9 +219,9 @@ def user_page(id):
     name = json_data.get('name')
     name = 'ゲスト' if name is None else name
     lon = json_data.get('lon')
-    lon = 135.26172618 if lon is None else float(lon)
+    lon = 0.0 if lon is None else float(lon)
     lat = json_data.get('lat')
-    lat = 36.27791617 if lat is None else float(lat)
+    lat = 0.0 if lat is None else float(lat)
     address = json_data.get('address')
     message = json_data.get('message')
     image_base64 = json_data.get('image')
