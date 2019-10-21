@@ -1,6 +1,6 @@
 # IN TOUCH ~ Smarter communication ~
 
-[![Product Name](docks/ng_1910_logo.png)](https://youtu.be/Htnzlmhxmt8)
+[![Product Name](docs/ng_1910_logo.png)](https://youtu.be/Htnzlmhxmt8)
 
 ## 製品概要
 ### Communication Tech
