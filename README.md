@@ -12,7 +12,7 @@
 ### 製品説明（具体的な製品の説明）
 ![Product Name](docs/ng_1910_explain.png)
 - スマートフォンをNFCタグにかざすだけで帰宅したことをLINEで親に通達してくれるサービスです. かざす操作のみで自動で録音・撮影を行い, それらのデータをLINE Botを経由して他の端末に送ります. スマートホンで”touch”するだけで「連絡が取ることができ」, 心に触れるような家族の心安らぐコミュニケーションを支援できるよう思いを込めて「In Touch」と名付けました。
-- [使用方法動画](https://youtu.be/qBldKGxsHuI)
+- [使用方法動画(本編)](https://youtu.be/qBldKGxsHuI)
 - [InTouch専用LineBot](https://line.me/R/ti/p/%40366oiysi)
 
 ### 特長
